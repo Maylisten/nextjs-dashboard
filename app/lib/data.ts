@@ -1,25 +1,27 @@
-import { sql } from '@vercel/postgres';
+import {sql} from '@vercel/postgres';
 import {
+  CountRow,
   CustomerField,
   CustomersTableType,
   InvoiceForm,
   InvoicesTable,
   LatestInvoiceRaw,
   Revenue,
+  SumRow,
 } from './definitions';
-import { formatCurrency } from './utils';
+import {formatCurrency} from './utils';
 
 export async function fetchRevenue() {
   try {
     // Artificially delay a response for demo purposes.
     // Don't do this in production :)
 
-    // console.log('Fetching revenue data...');
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
+    console.log('Fetching revenue data...');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const data = await sql<Revenue>`SELECT * FROM revenue`;
 
-    // console.log('Data fetch completed after 3 seconds.');
+    console.log('Data fetch completed after 3 seconds.');
 
     return data.rows;
   } catch (error) {
@@ -36,7 +38,7 @@ export async function fetchLatestInvoices() {
       JOIN customers ON invoices.customer_id = customers.id
       ORDER BY invoices.date DESC
       LIMIT 5`;
-
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const latestInvoices = data.rows.map((invoice) => ({
       ...invoice,
       amount: formatCurrency(invoice.amount),
@@ -84,6 +86,7 @@ export async function fetchCardData() {
 }
 
 const ITEMS_PER_PAGE = 6;
+
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
@@ -213,5 +216,45 @@ export async function fetchFilteredCustomers(query: string) {
   } catch (err) {
     console.error('Database Error:', err);
     throw new Error('Failed to fetch customer table.');
+  }
+}
+
+export async function fetchTotalPaidInvoices() {
+  try {
+    const data = await sql<SumRow>`SELECT SUM(amount) FROM invoices where status='paid'`;
+    return data.rows[0].sum;
+  } catch (err) {
+    console.error('Database Error:', err);
+    throw new Error('Failed to fetch totalPaidInvoices.');
+  }
+}
+
+export async function fetchTotalPendingInvoices() {
+  try {
+    const data = await sql<SumRow>`SELECT SUM(amount) FROM invoices where status='pending'`;
+    return data.rows[0].sum;
+  } catch (err) {
+    console.error('Database Error:', err);
+    throw new Error('Failed to fetch totalPendingInvoices.');
+  }
+}
+
+export async function fetchNumberOfInvoices() {
+  try {
+    const data = await sql<CountRow>`SELECT COUNT(*) FROM invoices`;
+    return data.rows[0].count;
+  } catch (err) {
+    console.error('Database Error:', err);
+    throw new Error('Failed to fetch all customers.');
+  }
+}
+
+export async function fetchNumberOfCustomers() {
+  try {
+    const data = await sql<CountRow>`SELECT COUNT(*) FROM customers`;
+    return data.rows[0].count;
+  } catch (err) {
+    console.error('Database Error:', err);
+    throw new Error('Failed to fetch all customers.');
   }
 }
